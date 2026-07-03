@@ -9,10 +9,6 @@ export interface DigestItem {
   source_name: string;
 }
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
-
 // Tune this to your actual focus areas. This is the main lever for relevance.
 const FOCUS_AREAS = `
 - Infrastructure operations, IT ops automation, and enterprise AI tooling (relevant to a large-scale infra ops role)
@@ -23,6 +19,10 @@ const FOCUS_AREAS = `
 `;
 
 export async function generateDigest(): Promise<DigestItem[]> {
+  const anthropic = new Anthropic({
+    apiKey: process.env.ANTHROPIC_API_KEY,
+  });
+
   const systemPrompt = `You are a sharp AI industry analyst producing a digest for a technical founder and infrastructure operations lead. He cares about news that actually changes what he should build, use, or watch — not routine announcements.
 
 Your job:
