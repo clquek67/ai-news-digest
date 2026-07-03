@@ -4,16 +4,35 @@ import { Resend } from "resend";
 import { generateDigest } from "@/lib/generate-digest";
 import { buildEmailHtml } from "@/lib/email-template";
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
 
+// Force this route to be treated as fully dynamic / server-only so Next.js
+// never tries to statically evaluate or prerender it at build time.
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 export async function GET(req: NextRequest) {
+  // Lazy-init clients here (not at module top level) so missing env vars
+  // only surface as a request-time error, not a build-time crash.
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return NextResponse.json(
+      { error: "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY env var" },
+      { status: 500 }
+    );
+  }
+  if (!process.env.RESEND_API_KEY) {
+    return NextResponse.json(
+      { error: "Missing RESEND_API_KEY env var" },
+      { status: 500 }
+    );
+  }
+
+  const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+  const resend = new Resend(process.env.RESEND_API_KEY);
+
   // Protect the cron endpoint. Vercel Cron sends this header automatically.
   const authHeader = req.headers.get("authorization");
   const isVercelCron = authHeader === `Bearer ${process.env.CRON_SECRET}`;
